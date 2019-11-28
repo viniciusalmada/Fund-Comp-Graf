@@ -124,24 +124,24 @@ classdef CrossSolver < handle
         %------------------------------------------------------------------
         % Initializes member stiffness coefficients.
         function cross = initStiffness(cross)
-            if cross.supinit == 0 % simply supported
+            if cross.supinit == 0
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 01 %%%%%%%
                 cross.membs(1).k = 3 * cross.membs(1).EI / cross.membs(1).len;
-                %%%%%%% COMPLETE HERE - CROSS_SOLVER: 01 %%%%%%%
-            else
+            elseif cross.supinit == 1
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 02 %%%%%%%
                 cross.membs(1).k = 4 * cross.membs(1).EI / cross.membs(1).len;
-                %%%%%%% COMPLETE HERE - CROSS_SOLVER: 02 %%%%%%%
+            else % Extremidade livre
+                cross.membs(1).k = 0;
             end
             
             if cross.supend == 0
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 03 %%%%%%%
-                cross.membs(end).k = 3 * cross.membs(end).EI / cross.membs(end).len;
-                %%%%%%% COMPLETE HERE - CROSS_SOLVER: 03 %%%%%%%
-            else
+                cross.membs(cross.nmemb).k = 3 * cross.membs(cross.nmemb).EI / cross.membs(cross.nmemb).len;
+            elseif cross.supend == 1
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 04 %%%%%%%
-                cross.membs(end).k = 4 * cross.membs(end).EI / cross.membs(end).len;
-                %%%%%%% COMPLETE HERE - CROSS_SOLVER: 04 %%%%%%%
+                cross.membs(cross.nmemb).k = 4 * cross.membs(cross.nmemb).EI / cross.membs(cross.nmemb).len;
+            else % Extremidade livre
+                cross.membs(cross.nmemb).k = 0;
             end
             
             for i = 2:cross.nmemb-1
@@ -171,12 +171,12 @@ classdef CrossSolver < handle
                 cross.nodes(i).tr = 1/2;
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 07 %%%%%%%
             end
-            if cross.supinit == 0
+            if cross.supinit == 0 || cross.supinit == 2
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 08 %%%%%%%
                 cross.nodes(1).tl = 0;
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 08 %%%%%%%
             end
-            if cross.supend == 0
+            if cross.supend == 0 || cross.supinit == 2
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 09 %%%%%%%
                 cross.nodes(end).tr = 0;
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 09 %%%%%%%
@@ -200,13 +200,16 @@ classdef CrossSolver < handle
             if cross.supinit == 0
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 10 %%%%%%%
                 cross.membs(1).ml = 0;
-                cross.membs(1).mr = -q * len2 / 8;
+                cross.membs(1).mr = - q * len2 / 8;
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 10 %%%%%%%
-            else
+            elseif cross.supinit == 1
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 11 %%%%%%%
                 cross.membs(1).ml = q * len2 / 12;
-                cross.membs(1).mr = -q * len2 / 12;
+                cross.membs(1).mr = - q * len2 / 12;
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 11 %%%%%%%
+            else
+                cross.membs(1).ml = 0;
+                cross.membs(1).mr = - q * len2 / 2;
             end
             
             len = cross.membs(cross.nmemb).len;
@@ -214,14 +217,17 @@ classdef CrossSolver < handle
             q = cross.membs(cross.nmemb).q;
             if cross.supend == 0
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 12 %%%%%%%
-                cross.membs(end).ml = q * len2 / 8;
-                cross.membs(end).mr = 0;
+                cross.membs(cross.nmemb).ml = q * len2 / 8;
+                cross.membs(cross.nmemb).mr = 0;
                 %%%%%%% COMPLETE HERE - CROSS_SOLVER: 12 %%%%%%%
+            elseif cross.supend == 1
+                %%%%%%% COMPLETE HERE - CROSS_SOLVER: 13 %%%%%%%
+                cross.membs(cross.nmemb).ml = q * len2 / 12;
+                cross.membs(cross.nmemb).mr = - q * len2 / 12;
+                %%%%%%% COMPLETE HERE - CROSS_SOLVER: 13 %%%%%%%
             else
-                %%%%%%% COMPLETE HERE - CROSS_SOLVER: 13 %%%%%%%
-                cross.membs(end).ml = q * len2 / 12;
-                cross.membs(end).mr = -q * len2 / 12;
-                %%%%%%% COMPLETE HERE - CROSS_SOLVER: 13 %%%%%%%
+                cross.membs(cross.nmemb).ml = q * len2 / 2;
+                cross.membs(cross.nmemb).mr = 0;
             end
             
             for i = 2:cross.nmemb-1
@@ -399,7 +405,6 @@ classdef CrossSolver < handle
             fprintf(out, '    PONTIFICAL CATHOLIC UNIVERSITY OF RIO DE JANEIRO\n');
             fprintf(out, '   DEPARTMENT OF CIVIL AND ENVIRONMENTAL ENGINEERING\n');
             fprintf(out, '                            \n');
-            fprintf(out, '   ALUNO: VINICIUS ALMADA (1913147)       \n');
             fprintf(out, '   CIV2801 - FUNDAMENTOS DE COMPUTACAO GRAFICA APLICADA\n');
             fprintf(out, '=========================================================\n');
             

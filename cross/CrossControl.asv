@@ -383,9 +383,9 @@ classdef CrossControl < handle
             control.restart;
             % Update display of canvases
             control.canvas_model.update();
-            control.canvas_deformed.update();
-            control.canvas_moment.update();
-            control.canvas_iterativesolution.update();
+%             control.canvas_deformed.update();
+%             control.canvas_moment.update();
+%             control.canvas_iterativesolution.update();
         end
         
         %------------------------------------------------------------------
@@ -413,9 +413,6 @@ classdef CrossControl < handle
             control.restart;
             % Update display of canvases
             control.canvas_model.update();
-            control.canvas_deformed.update();
-            control.canvas_moment.update();
-            control.canvas_iterativesolution.update();
         end
         
         %------------------------------------------------------------------

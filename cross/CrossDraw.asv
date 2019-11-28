@@ -1223,10 +1223,9 @@ classdef CrossDraw < handle
             totalLen = draw.solver.totalLen;
             supsize = draw.solver.totalLen * CrossDraw.supsize_fac;
             node_pos = 0;
-            
-            len1 = draw.solver.membs(1).len;
-            lenend = draw.solver.membs(end).len;
             for i = 1:draw.solver.nmemb-1
+                len1 = draw.solver.membs(1).len;
+                lenend = draw.solver.membs(end).len;
                 len = draw.solver.membs(i).len;
                 node_pos = node_pos + len;
                 if inpolygon(pt(1),pt(2),...
