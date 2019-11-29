@@ -253,7 +253,7 @@ classdef CrossDraw < handle
         
         %------------------------------------------------------------------
         % Plots a third gender support symbol
-        function thirdGenSupportDraft(cnv,hnd,x,y,h,c,isOnLeft)
+        function draftThirdGenSupport(cnv,hnd,x,y,h,c,isOnLeft)
             w = h / 4;
             horLines = linspace(y-h/2,y+h/2,6);
             line(cnv,[x x],[y-h/2 y+h/2],'Color',c,'LineWidth',1.2, 'Parent', hnd)
@@ -524,7 +524,7 @@ classdef CrossDraw < handle
         %  load_size: size of load
         %  load_step: step size for drawing arrows
         %  arrowsize: size of arrow head
-        function memberLoad(draw,cnv,init_pos,len,q,load_size,load_step,arrowsize)
+        function memberLoad(draw,cnv,init_pos,len,q,load_size,~,arrowsize)
             
             arrowCount = floor(len / draw.mGapLoadArrow);
             arrowPos = init_pos + (len - draw.mGapLoadArrow * ...
@@ -574,7 +574,7 @@ classdef CrossDraw < handle
         %  q: uniform load value
         %  load_size: size of load
         %  load_step: step size for drawing arrows
-        function draftMemberLoad(draw,cnv,hnd,init_pos,len,q,load_size,load_step,arrowsize)
+        function draftMemberLoad(draw,cnv,hnd,init_pos,len,q,load_size,~,arrowsize)
             arrowCount = floor(len / draw.mGapLoadArrow);
             arrowPos = init_pos + (len - draw.mGapLoadArrow * ...
                 (arrowCount - 1)) / 2;
@@ -761,7 +761,7 @@ classdef CrossDraw < handle
             
             % Funcao de Verificacao da rotação do primeiro apoio ----------
             
-            rot = [];
+            rot = zeros(1,draw.solver.nmemb + 1);
             
             for n = 1: draw.solver.nmemb + 1
                 
@@ -987,7 +987,7 @@ classdef CrossDraw < handle
             end
             
             % Find number of visible rows
-            num_rows = draw.solver.numSteps - topStage + 1;
+%             num_rows = draw.solver.numSteps - topStage + 1;
             
             % Draw continous beam
             posy = (canvasYsize - beamYstrip) * 0.5;
@@ -1019,11 +1019,11 @@ classdef CrossDraw < handle
             end
             
             if draw.solver.numSteps > 0
-                if draw.solver.numSteps > max_numrows
-                    c = draw.solver.numSteps - max_numrows;
-                else
-                    c = 1;
-                end
+%                 if draw.solver.numSteps > max_numrows
+%                     c = draw.solver.numSteps - max_numrows;
+%                 else
+%                     c = 1;
+%                 end
                 
                 k = 0;
                 lim = topStage;
@@ -1133,6 +1133,8 @@ classdef CrossDraw < handle
             pick_tol = draw.solver.totalLen * CrossDraw.picktol_fac;
             %%%%%%% COMPLETE HERE - CROSSDRAW: 06 %%%%%%%
             % Checks if the point is in the tolerance rectangle
+            len1 = draw.solver.membs(1).len;
+            lenend = draw.solver.membs(end).len;
             if inpolygon(pt(1),pt(2),...
                     [0 totalLen totalLen 0],...
                     [-pick_tol/2 -pick_tol/2 pick_tol/2 pick_tol/2])
@@ -1415,98 +1417,102 @@ classdef CrossDraw < handle
             arrowsize = draw.solver.totalLen * CrossDraw.arrowsize_fac;
             supsize = draw.solver.totalLen * CrossDraw.supsize_fac;
             totalLen = draw.solver.totalLen;
-            picktol = CrossDraw.picktol_fac * totalLen;
             node_pos = 0;
-            for i = 1:draw.solver.nmemb+1
-                if i < draw.solver.nmemb
-                    len = draw.solver.membs(i).len;
+
+            % 1 for supinit, 
+            % 2 for first internal support, etc.
+            % (draw.solver.nnode + 2) for supend
+            lastSup = draw.solver.nnode + 2;
+            for ind = 1:lastSup
+                inpol = inpolygon(pt(1),pt(2),...
+                            [node_pos - supsize,...
+                            node_pos + supsize,...
+                            node_pos + supsize,...
+                            node_pos - supsize],...
+                            [-supsize,-supsize,supsize,supsize]);
+                if inpol
+                    draw.picksup = ind;
+                    stat = draw.SupMoveFound;
+                    draw.hnd_draft = hggroup(cnv);
+                    
+                    % Apoio inicial, simples
+                    if ind == 1 && draw.solver.supinit == 0
+                        draw.draftTriangle(cnv,draw.hnd_draft,node_pos,0,...
+                            supsize,supsize,-pi/2,draw.GREEN);
+                    % Apoio inicial, engastado
+                    elseif ind == 1 && draw.solver.supinit == 1
+                        draw.draftThirdGenSupport(cnv,draw.hnd_draft,node_pos,...
+                            0,supsize,draw.GREEN,true);
+                    % Apoio inicial, livre
+                    elseif ind == 1 && draw.solver.supinit == 2
+                        % Do nothing
+                        return
+                    end
+
+                    % Apoio final, simples
+                    if ind == lastSup && draw.solver.supend == 0
+                        draw.draftTriangle(cnv,draw.hnd_draft,node_pos,0,...
+                            supsize,supsize,-pi/2,draw.GREEN);
+                    % Apoio final, engastado
+                    elseif ind == lastSup && draw.solver.supend == 1
+                         draw.draftThirdGenSupport(cnv,draw.hnd_draft,node_pos,...
+                            0,supsize,draw.GREEN,true);
+                    elseif ind == lastSup && draw.solver.supend == 2
+                        % Do nothing
+                        return                         
+                    end
+
+                    if ind == 1
+                    	qR = draw.solver.membs(ind).q;
+                    	lenR = draw.solver.membs(ind).len;
+
+                    	loadSizeR = CrossDraw.loadsize_fac * halfYsize * ...
+                        	(abs(qR) / max_load);
+                        loadSizeR = max(loadSizeR, minload_size);
+
+                        draw.draftMemberLoad(cnv,draw.hnd_draft,node_pos,lenR,...
+                        	qR,loadSizeR,load_step,arrowsize);
+                        draw.draftDimensionMember(cnv,draw.hnd_draft,node_pos,lenR,...
+                        	halfYsize,draw.GREEN);
+                        return
+                    elseif ind == lastSup
+                    	qL = draw.solver.membs(ind-1).q;
+                    	lenL = draw.solver.membs(ind-1).len;
+
+                    	loadSizeL = CrossDraw.loadsize_fac * halfYsize * ...
+                        	(abs(qL) / max_load);
+                        loadSizeL = max(loadSizeL, minload_size);
+
+                        draw.draftMemberLoad(cnv,draw.hnd_draft,totalLen-lenL,lenL,...
+                        	qL,loadSizeL,load_step,arrowsize);
+                        draw.draftDimensionMember(cnv,draw.hnd_draft,totalLen-lenL,lenL,...
+                        	halfYsize,draw.GREEN);
+                        return
+                    else
+                    	qL = draw.solver.membs(ind-1).q;
+                    	qR = draw.solver.membs(ind).q;
+                    	lenL = draw.solver.membs(ind-1).len;
+                    	lenR = draw.solver.membs(ind).len;
+
+                    	loadSizeL = CrossDraw.loadsize_fac * halfYsize * ...
+                        	(abs(qL) / max_load);
+                        loadSizeL = max(loadSizeL, minload_size);
+                        loadSizeR = CrossDraw.loadsize_fac * halfYsize * ...
+                        	(abs(qR) / max_load);
+                        loadSizeR = max(loadSizeR, minload_size);
+
+                        draw.draftMemberLoad(cnv,draw.hnd_draft,node_pos,lenL,...
+                        	qL,loadSizeL,load_step,arrowsize);
+                        draw.draftDimensionMember(cnv,draw.hnd_draft,node_pos,lenL,...
+                        	halfYsize,draw.GREEN);
+                        draw.draftMemberLoad(cnv,draw.hnd_draft,node_pos,lenR,...
+                        	qR,loadSizeR,load_step,arrowsize);
+                        draw.draftDimensionMember(cnv,draw.hnd_draft,node_pos,lenR,...
+                        	halfYsize,draw.GREEN);
+                        return
+                    end
                 end
-                
-                if i == 1 && inpolygon(pt(1),pt(2),...
-                        [- supsize, supsize, supsize, - supsize],...
-                        [- supsize, - supsize, supsize, supsize])
-                    draw.picksup = i;
-                    stat = draw.SupMoveFound;
-                    draw.hnd_draft = hggroup(cnv);
-                    draw.draftTriangle(cnv,draw.hnd_draft,node_pos,0,...
-                        supsize,supsize,-pi/2,draw.GREEN);
-                    
-                    q1 = draw.solver.membs(i).q;
-                    
-                    load_size1 = CrossDraw.loadsize_fac * halfYsize * ...
-                        (abs(q1) / max_load);
-                    load_size1 = max(load_size1, minload_size);
-                    
-                    draw.draftMemberLoad(cnv,draw.hnd_draft,node_pos-len,len,...
-                        q1,load_size1,load_step,arrowsize);
-                    
-                    draw.draftDimensionMember(cnv,draw.hnd_draft,node_pos-len,len,...
-                        halfYsize,draw.GREEN);
-                    return
-                    
-                    % Seeing the last support
-                elseif i == draw.solver.nmemb + 1 && inpolygon(pt(1),pt(2),...
-                        [totalLen - supsize, totalLen + supsize, totalLen + supsize, totalLen - supsize],...
-                        [- supsize, - supsize, supsize, supsize])
-                    draw.picksup = i;
-                    stat = draw.SupMoveFound;
-                    draw.hnd_draft = hggroup(cnv);
-                    draw.draftTriangle(cnv,draw.hnd_draft,node_pos,0,...
-                        supsize,supsize,-pi/2,draw.GREEN);
-                    
-                    q2 = draw.solver.membs(i+1).q;
-                    len2 = draw.solver.membs(i+1).len;
-                
-                    
-                    load_size2 = CrossDraw.loadsize_fac * halfYsize * ...
-                        (abs(q2) / max_load);
-                    load_size2 = max(load_size2, minload_size);
-                    
-                    draw.draftMemberLoad(cnv,draw.hnd_draft,node_pos,len2,...
-                        q2,load_size2,load_step,arrowsize);
-                    
-                    draw.draftDimensionMember(cnv,draw.hnd_draft,node_pos,len2,...
-                        halfYsize,draw.GREEN);
-                    return
-                    
-                    % Seeing internals supports
-                elseif inpolygon(pt(1),pt(2),...
-                        [node_pos-supsize,...
-                        node_pos+supsize,...
-                        node_pos+supsize,...
-                        node_pos-supsize],...
-                        [-supsize,-supsize,supsize,supsize])
-                    draw.picksup = i;
-                    
-                    stat = draw.SupMoveFound;
-                    draw.hnd_draft = hggroup(cnv);
-                    draw.draftTriangle(cnv,draw.hnd_draft,node_pos,0,...
-                        supsize,supsize,-pi/2,draw.GREEN);
-                    
-                    q1 = draw.solver.membs(i).q;
-                    q2 = draw.solver.membs(i+1).q;
-                    len2 = draw.solver.membs(i+1).len;
-                    
-                    load_size1 = CrossDraw.loadsize_fac * halfYsize * ...
-                        (abs(q1) / max_load);
-                    load_size1 = max(load_size1, minload_size);
-                    
-                    load_size2 = CrossDraw.loadsize_fac * halfYsize * ...
-                        (abs(q2) / max_load);
-                    load_size2 = max(load_size2, minload_size);
-                    
-                    draw.draftMemberLoad(cnv,draw.hnd_draft,node_pos-len,len,...
-                        q1,load_size1,load_step,arrowsize);
-                    draw.draftMemberLoad(cnv,draw.hnd_draft,node_pos,len2,...
-                        q2,load_size2,load_step,arrowsize);
-                    
-                    draw.draftDimensionMember(cnv,draw.hnd_draft,node_pos-len,len,...
-                        halfYsize,draw.GREEN);
-                    draw.draftDimensionMember(cnv,draw.hnd_draft,node_pos,len2,...
-                        halfYsize,draw.GREEN);
-                    return
-                end
-                node_pos = node_pos + len;
+                node_pos = node_pos + draw.solver.membs(ind).len;
             end
             %%%%%%% COMPLETE HERE - CROSSDRAW: 11 %%%%%%%
         end
