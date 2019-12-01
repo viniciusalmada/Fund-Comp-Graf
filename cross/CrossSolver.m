@@ -329,7 +329,7 @@ classdef CrossSolver < handle
             cross.stepVector(cross.numSteps).bmr = bmr;
             cross.stepVector(cross.numSteps).tml = tml;
             cross.stepVector(cross.numSteps).tmr = tmr;
-            cross.stepVector(cross.numSteps)
+            cross.stepVector(cross.numSteps);
             
             % Update node rotation
             drot = - unbal / (cross.membs(n).k + cross.membs(n+1).k);
