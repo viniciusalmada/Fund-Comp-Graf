@@ -79,6 +79,9 @@ classdef CrossDraw < handle
 		arrowLoad_fac = 0.02;
 		deformMax_fac = 0.80;
 		arrowSpacing_fac = 0.02;
+        HING = 0;
+        CLAMP = 1;
+        FREE = 2;
 	end
 	
 	%% Private properties
@@ -158,6 +161,15 @@ classdef CrossDraw < handle
 			X = [x, x + h * cx + b/2 * cy, x + h * cx - b/2 * cy];
 			Y = [y, y + h * cy - b/2 * cx, y + h * cy + b/2 * cx];
 			fill(cnv, X, Y, c);
+        end
+        
+        function pot(cnv,x,y,h,b,ang,c)
+			cx = cos(ang);
+			cy = sin(ang);
+			
+			X = [x, x + h * cx + b/2 * cy,x, x + h * cx - b/2 * cy];
+			Y = [y, y + h * cy - b/2 * cx,y, y + h * cy + b/2 * cx];
+			line(cnv, X, Y, 'Color',c,'LineWidth',1.5);
 		end
 		
 		%------------------------------------------------------------------
@@ -223,6 +235,16 @@ classdef CrossDraw < handle
 			Y = [y, y + l * cy];
 			line(cnv, X, Y, 'Color', c);
 			CrossDraw.triangle(cnv, x, y, h, b, ang, c);
+        end
+        
+        function arrow2DA(cnv,x,y,l,h,b,ang,c)
+			cx = sin(ang);
+			cy = cos(ang);
+			
+			X = [x, x - l * cx];
+			Y = [y, y + l * cy];
+			line(cnv, X, Y, 'Color', c,'LineWidth',1.5);
+			CrossDraw.pot(cnv, x-cx, cy, h, b, ang+deg2rad(-90), c);
 		end
 		
 		function draftArrow2D(cnv,hnd,x,y,l,h,b,ang,c)
@@ -273,32 +295,32 @@ classdef CrossDraw < handle
 		% = 2
 		function [N2, N4] = funcoes_forma(artinit, artend, len, x)
 						
-			if artinit == 0 && artend == 0
+			if artinit == CrossDraw.CLAMP && artend == CrossDraw.CLAMP
 				
 				N2 = x - (2 .* x.^2 / len) + (x.^3 / len^2);
 				N4 = - (x.^2 / len) + (x.^3 / len^2);
 				
-			elseif artinit == 1 && artend == 0
+			elseif artinit == CrossDraw.HING && artend == CrossDraw.CLAMP
 				
 				N2 = 0;
 				N4 = - (x / 2) + (x.^3 / 2 / len^2);
 				
-			elseif artinit == 0 && artend == 1
+			elseif artinit == CrossDraw.CLAMP && artend == CrossDraw.HING
 				
 				N2 = x - (3 .* x.^2 / 2 / len) + (x.^3 / 2 / len^2);
 				N4 = 0;
 				
-			elseif artinit == 1 && artend == 1
+			elseif artinit == CrossDraw.HING && artend == CrossDraw.HING
 				
 				N2 = 0;
 				N4 = 0;
 				
-			elseif artinit == 2 && artend == 1
+			elseif artinit == CrossDraw.FREE && artend == CrossDraw.CLAMP
 				
 				N2 = 0;
 				N4 = - (x.^2 / len) + (x.^3 / len^2);
 				
-			elseif artinit == 1 && artend == 2
+			elseif artinit == CrossDraw.CLAMP && artend == CrossDraw.FREE
 				
 				N2 = x - (2 .* x.^2 / len) + (x.^3 / len^2);
 				N4 = 0;
@@ -314,29 +336,29 @@ classdef CrossDraw < handle
 		% artend = articulação final. Apoio simples = 0, Engaste = 1
 		function [v01] = engastamento_perfeito(artinit, artend, len, q, EI, x)
 			
-			if artinit == 1 && artend == 1
+			if artinit == CrossDraw.CLAMP && artend == CrossDraw.CLAMP
 				
-				v01 = (q / EI) .* ( ( - len^2 .* x.^2 / 24) + ( len .* x.^3 / 12 ) - ( x.^4 / 24 ) );
+				v01 = (q / EI) .* ( ( - len^2 .* x.^2 ./ 24) + ( len .* x.^3 ./ 12 ) - ( x.^4 ./ 24 ) );
 				
-			elseif artinit == 0 && artend == 1
+			elseif artinit == CrossDraw.HING && artend == CrossDraw.CLAMP
 				
-				v01 = (q / EI) .* ( ( - len^3 .* x / 48) + ( len .* x.^3 / 16 ) - ( x.^4 / 24 ) );
+				v01 = (q / EI) .* ( ( - len^3 .* x ./ 48) + ( len .* x.^3 ./ 16 ) - ( x.^4 ./ 24 ) );
 				
-			elseif artinit == 1 && artend == 0
+			elseif artinit == CrossDraw.CLAMP && artend == CrossDraw.HING
 				
-				v01 = (q / EI) .* ( ( - len^2 .* x.^2 / 16) + ( 5 .* len .* x.^3 / 48 ) - ( x.^4 / 24 ) );
+				v01 = (q / EI) .* ( ( - len^2 .* x.^2 ./ 16) + ( 5 .* len .* x.^3 ./ 48 ) - ( x.^4 ./ 24 ) );
 				
-			elseif artinit == 0 && artend == 0
+			elseif artinit == CrossDraw.HING && artend == CrossDraw.HING
 				
-				v01 = (q / EI) .* ( ( - len^3 .* x / 24) + ( len .* x.^3 / 12 ) - ( x.^4 / 24 ) );
+				v01 = (q / EI) .* ( ( - len^3 .* x ./ 24) + ( len .* x.^3 ./ 12 ) - ( x.^4 ./ 24 ) );
 				
-			elseif artinit == 1 && artend == 2
+			elseif artinit == CrossDraw.CLAMP && artend == CrossDraw.FREE
 				
-				v01 = (q / EI) .* ( (x.^4 / 24) + (len^2 .* x.^2 / 4) - (len .* x.^3 / 6));
+				v01 = (q / EI) .* ( (x.^4 ./ 24) + (len^2 .* x.^2 ./ 4) - (len .* x.^3 ./ 6));
 				
-			elseif artinit == 2 && artend == 1
+			elseif artinit == CrossDraw.FREE && artend == CrossDraw.CLAMP
 				
-				v01 = (q / EI) .* ( (-x.^4 / 24) + (len^3 .* x / 6) - (len^4 / 8) );
+				v01 = (q / EI) .* ( (-x.^4 ./ 24) + (len^3 .* x ./ 6) - (len^4 ./ 8) );
 				
 			end
 						
@@ -717,153 +739,76 @@ classdef CrossDraw < handle
 			
 			% Draw deformed configuration
 			%%%%%%% COMPLETE HERE - CROSSDRAW: 02 %%%%%%%
-			% DESENHANDO A CONFIGURAÇÃO DEFORMADA DO PRIMEIRO MEMBRO ------
-			
-			% Verificando o maior comprimento e o maior carregamento
-			% Calculo do fator para a deformada
-			
-			maxlen = 0;
-			maxq = 0;
-			
-			for i = 1: draw.solver.nmemb
-				
-				if draw.solver.membs(i).len >= maxlen
-					maxlen = draw.solver.membs(i).len;
-				end
-				
-				if abs(draw.solver.membs(i).q) >= maxq
-					maxq = abs(draw.solver.membs(i).q);
-				end
-				
-			end
-			
-			% Calculo do deslocamento para o meio do vão, considerando uma
-			% viga hipotética de comprimento o maior encontrado e
-			% carregamento também o maior encontrado....
-			[v01] = CrossDraw.engastamento_perfeito(1, 1, maxlen, maxq, draw.solver.membs(1).EI, maxlen * 0.5);
-			
-			deform_fac = draw.solver.totalLen * 0.5 / abs(v01);
-			
-			% Contador, apresenta a coordenada x do inicio de cada elemento
-			
-			contlen = zeros(1,draw.solver.nmemb);
-			
-			for i = 1:draw.solver.nmemb
-				
-				if i == 1
-					contlen(1) = 0;
-				else
-					contlen(i) = contlen(i-1) + draw.solver.membs(i-1).len;
-				end
-				
-			end
-				  
-			
-			% Funcao de Verificacao da rotação do primeiro apoio ----------
-			
-			rot = zeros(1,draw.solver.nmemb + 1);
-			
-			for n = 1: draw.solver.nmemb + 1
-				
-				rot(n) = draw.solver.nodes.rot; 
-				
-			end
-			
-			% Função de forma do primeiro membro --------------------------
-			% Função de engastamento perfeito do primeiro membro ----------
-			
-			supinit = draw.solver.supinit;
-			len = draw.solver.membs(1).len;
-			q = draw.solver.membs(1).q;
-			EI = draw.solver.membs(1).EI;
-			
-			% Cria um vetor de 0 até len divido em Dx espaços
-			dx = 100;
-			x = 0 : len / dx : len;
-			
-			if supinit == 0 % Verifica se o apoio inicial é simples
-				
-			   [N2, N4] = CrossDraw.funcoes_forma(0, 1, len, x);
-			   [v01] = CrossDraw.engastamento_perfeito(0, 1, len, q, EI, x);
-				
-			elseif supinit == 1 % Verifica se o apoio inicial é engaste
-				   
-			   [N2, N4] = CrossDraw.funcoes_forma(1, 1, len, x);
-			   [v01] = CrossDraw.engastamento_perfeito(1, 1, len, q, EI, x);
-			  
-			elseif supinit == 2 % Verifiica se o apoio inicial é livre
-			   
-			   [N2, N4] = CrossDraw.funcoes_forma(2, 1, len, x);
-			   [v01] = CrossDraw.engastamento_perfeito(2, 1, len, q, EI, x);
-			   
-			end
-						  
-			% Função de deslocamento transversal
-			
-			v0 = v01 + ( rot(1) * N2 + rot(2) * N4 );
-						
-			% Plot da função 
-			
-			plot(cnv,x + contlen(1), v0 * deform_fac,'LineWidth',2,'color',[1,1,0]);
-						
-			% DESENHANDO A CONFIGURAÇÃO DEFORMADA DOS MEMBROS
-			% INTERMEDIÁRIOS ----------------------------------------------
-			 
-				for i = 2: draw.solver.nmemb - 1
-														  
-					len = draw.solver.membs(i).len;
-					q = draw.solver.membs(i).q;
-					EI = draw.solver.membs(i).EI;
-					
-					% Cria um vetor de 0 até len divido em Dx espaços
-					dx = 100;
-					x = 0 : len / dx : len;
-					
-					[N2, N4] = CrossDraw.funcoes_forma(1, 1, len, x);
-					[v01] = CrossDraw.engastamento_perfeito(1, 1, len, q, EI, x);
-					v0 = v01 + ( rot(i) * N2 + rot(i+1) * N4 );
-					plot(cnv,x + contlen(i), v0 * deform_fac,'LineWidth',2,'color',[1,1,0]);
-					
-				end
-						   
-			% DESENHANDO A CONFIGURAÇÃO DEFORMADA DO ÚLTIMO MEMBRO --------
-			
-			supend = draw.solver.supend;
-			len = draw.solver.membs(end).len;
-			q = draw.solver.membs(end).q;
-			EI = draw.solver.membs(end).EI;
-			
-			% Cria um vetor de 0 até len divido em Dx espaços
-			dx = 100;
-			x = 0 : len / dx : len;
-			
-			% Função de forma do ultimo membro ----------------------------
-			% Função de engastamento perfeito do ultimo membro ------------
-			
-			if supend == 0 % Verifica se o apoio final é simples
-				
-			   [N2, N4] = CrossDraw.funcoes_forma(1, 0, len, x);
-			   [v01] = CrossDraw.engastamento_perfeito(1, 0, len, q, EI, x);
-				
-			elseif supend == 1 % Verifica se o apoio final é engaste
-				   
-			   [N2, N4] = CrossDraw.funcoes_forma(1, 1, len, x);
-			   [v01] = CrossDraw.engastamento_perfeito(1, 1, len, q, EI, x);
-			   
-			elseif supend == 2
-			  
-			   [N2, N4] = CrossDraw.funcoes_forma(1, 2, len, x);
-			   [v01] = CrossDraw.engastamento_perfeito(1, 2, len, q, EI, x);
-			   
-			end
-						
-			% Função de deslocamento transversal
-			
-			v0 = v01 + ( rot(end-1) * N2 + rot(end) * N4 );
-			
-			% Plot da função 
-			
-			plot(cnv,x + contlen(end), v0 * deform_fac,'LineWidth',2,'color',[1,1,0]);
+			halfYsize = diff(cnv.YLim) * 0.5;
+            maxDisplOnScreen = draw.deformMax_fac * halfYsize;
+            initPos=0;
+            totalDisc = 50;
+            v0 = zeros(1,totalDisc * draw.solver.nmemb);
+            x0 = zeros(1,totalDisc * draw.solver.nmemb);
+            for i=1:draw.solver.nmemb
+                % Member attributes
+                q = draw.solver.membs(i).q;
+                EI = draw.solver.membs(i).EI;
+                L = draw.solver.membs(i).len;
+                L2 = L * L;
+                L3 = L * L * L;
+                x = linspace(0,L,totalDisc);
+                if i==1 %% First member
+                    endNodeRot = draw.solver.nodes(i).rot;
+                    if draw.solver.supinit == CrossDraw.HING
+                        v01 = draw.engastamento_perfeito(CrossDraw.HING,CrossDraw.CLAMP,L,q,EI,x);
+                        [N2, N4] = draw.funcoes_forma(CrossDraw.HING,CrossDraw.CLAMP,L,x);
+                        initNodeRot = (q/EI * (-L3/48)) + (-1/2) * endNodeRot;
+                    elseif draw.solver.supinit == CrossDraw.CLAMP
+                        v01 = draw.engastamento_perfeito(CrossDraw.CLAMP,CrossDraw.CLAMP,L,q,EI,x);
+                        [N2, N4] = draw.funcoes_forma(CrossDraw.CLAMP,CrossDraw.CLAMP,L,x);
+                        initNodeRot = 0;
+                    elseif draw.solver.supinit == CrossDraw.FREE
+                        v01 = draw.engastamento_perfeito(CrossDraw.FREE,CrossDraw.CLAMP,L,q,EI,x);
+                        [N2, N4] = draw.funcoes_forma(CrossDraw.FREE,CrossDraw.CLAMP,L,x);
+                        initNodeRot = (q*(L3/6))/EI + endNodeRot;
+                    end
+                elseif i==draw.solver.nmemb %% Last member
+                    initNodeRot = draw.solver.nodes(i-1).rot;
+                    if draw.solver.supend == CrossDraw.HING
+                        v01 = draw.engastamento_perfeito(1,CrossDraw.HING,L,q,EI,x);
+                        [N2, N4] = draw.funcoes_forma(1,CrossDraw.HING,L,x);
+                        endNodeRot = (q/EI * ((-L3/8) + (5*L3/16) - (L3/6))) + ...
+                            (-1/2) * initNodeRot;
+                    elseif draw.solver.supend == CrossDraw.CLAMP
+                        v01 = draw.engastamento_perfeito(CrossDraw.CLAMP,CrossDraw.CLAMP,L,q,EI,x);
+                        [N2, N4] = draw.funcoes_forma(CrossDraw.CLAMP,CrossDraw.CLAMP,L,x);
+                        endNodeRot = 0;
+                    elseif draw.solver.supend == CrossDraw.FREE
+                        v01 = draw.engastamento_perfeito(CrossDraw.CLAMP,CrossDraw.FREE,L,q,EI,x);
+                        [N2, N4] = draw.funcoes_forma(CrossDraw.CLAMP,CrossDraw.FREE,L,x);
+                        endNodeRot = (len^3*q)/(6*EI) + initNodeRot;
+                    end
+                else %% Intermediate members
+                    v01 = draw.engastamento_perfeito(1,1,L,q,EI,x);
+                    [N2, N4] = draw.funcoes_forma(1,1,L,x);
+                    initNodeRot = draw.solver.nodes(i-1).rot;
+                    endNodeRot = draw.solver.nodes(i).rot;
+                end
+                v02 = initNodeRot .* N2 + endNodeRot .* N4;
+                v0(1,((i-1)*totalDisc+1):((i)*totalDisc)) = v01 + v02;
+                x0(1,((i-1)*totalDisc+1):((i)*totalDisc)) = initPos+x;
+                initPos = initPos + L;
+            end
+            maxDisp = max(abs(v0));
+            factor = maxDisplOnScreen / maxDisp;
+            line(cnv,x0,v0.*factor,'Color',[235, 113, 52] *1/255);
+            
+            nodePos = draw.solver.membs(1).len;
+            for i=1:draw.solver.nnode
+                rot = draw.solver.nodes(i).rot * factor;
+                if draw.solver.isNodeUnbalanced(i)
+                    CrossDraw.arrow2DA(cnv,nodePos,0,maxDisplOnScreen*0.8,maxDisplOnScreen*0.3,maxDisplOnScreen*0.2,rot,[1 0 0])
+                else
+                    CrossDraw.arrow2DA(cnv,nodePos,0,maxDisplOnScreen*0.8,maxDisplOnScreen*0.3,maxDisplOnScreen*0.2,rot,[235, 113, 52] *1/255)
+                end
+                nodePos = nodePos + draw.solver.membs(i+1).len;
+            end
 			%%%%%%% COMPLETE HERE - CROSSDRAW: 02 %%%%%%%
 		end
 		
