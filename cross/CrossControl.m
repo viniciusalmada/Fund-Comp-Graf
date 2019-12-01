@@ -476,7 +476,7 @@ classdef CrossControl < handle
                     end
                 end
                 %%%%%%% COMPLETE HERE - CROSS_CONTROL: 07 %%%%%%%
-            elseif control.inserting_sup && cnv == control.canvas_model
+            elseif cnv == control.canvas_model && control.inserting_sup
                 [stat,m,pos] = control.draw.pickInsertSup(pt);
                 if stat == control.draw.ValidSupInsertion
                     control.insertSup(m,pos);
@@ -487,7 +487,7 @@ classdef CrossControl < handle
                     control.app.setTextMessage('Internal support cannot be close to other support.');
                 end
                 control.app.resetInsertSup();
-            elseif control.deleting_sup && cnv == control.canvas_model
+            elseif cnv == control.canvas_model && control.deleting_sup
                 [stat,n] = control.draw.pickDeleteSup(pt);
                 if stat == control.draw.ValidSupDeletion
                     control.deleteSup(n);
@@ -516,10 +516,20 @@ classdef CrossControl < handle
                     [n,shift] = control.draw.setSupMove(cnv.getContext(),pt);
                     if (n > 0) && (abs(shift) > 0)
                         %%%%%%% COMPLETE HERE - CROSS_CONTROL: 11 %%%%%%%
-                        control.solver.membs(n).len = control.solver.membs(n).len...
-                            + shift;
-                        control.solver.membs(n+1).len = control.solver.membs(n+1).len...
-                            - shift;
+                        lastSup = control.solver.nnode + 2;
+                        if n == 1
+                            control.solver.membs(1).len = control.solver.membs(1).len ...
+                                - shift;
+                        elseif n == lastSup
+                            control.solver.membs(end).len = control.solver.membs(end).len ...
+                                + shift;
+                        else
+                            control.solver.membs(n-1).len = control.solver.membs(n-1).len...
+                                + shift;
+                            control.solver.membs(n).len = control.solver.membs(n).len...
+                                - shift;
+                        end
+                        control.solver.updateTotalLen();
                         control.canvas_model.update();
                         control.restart();
                         control.app.updateTextMessage();

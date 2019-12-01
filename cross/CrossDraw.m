@@ -1511,8 +1511,10 @@ classdef CrossDraw < handle
 							halfYsize,draw.GREEN);
 						return
 					end
-				end
-				node_pos = node_pos + draw.solver.membs(ind).len;
+                end
+                if ind < lastSup
+                    node_pos = node_pos + draw.solver.membs(ind).len;
+                end
 			end
 			%%%%%%% COMPLETE HERE - CROSSDRAW: 11 %%%%%%%
 		end
@@ -1521,200 +1523,177 @@ classdef CrossDraw < handle
 		% If there is a pick support, delete current draft graphics
 		% object and redisplay it in the new position defined by
 		% given mouse point point.
-		function updateSupMove(draw,cnv,pt)
-			if ~isempty(draw.hnd_draft)
-				delete(draw.hnd_draft);
-				draw.hnd_draft = [];
-			end
-			if draw.picksup == 0
-				return
-			end
-			%%%%%%% COMPLETE HERE - CROSSDRAW: 12 %%%%%%%
-			minMembLen = draw.solver.totalLen * CrossDraw.minmemblen_fac;
-			halfYsize = diff(cnv.YLim) * 0.5;
-			max_load = draw.getMaxLoad();
-			minload_size = draw.solver.totalLen * CrossDraw.minloadsize_fac;
-			load_step = draw.solver.totalLen * CrossDraw.loadstep_fac;
-			arrowsize = draw.solver.totalLen * CrossDraw.arrowsize_fac;
-			supsize = draw.solver.totalLen * CrossDraw.supsize_fac;
-			totalLen = draw.solver.totalLen;
-			node_pos = 0;
-
-			lastSup = draw.solver.nnode + 2;
-			if draw.picksup > 1 && draw.picksup < lastSup
-				for i = 2:draw.picksup
-					len = draw.solver.membs(i-1).len;
-					node_pos = node_pos + len;
-				end
-			elseif draw.picksup == lastSup
-				node_pos = totalLen;
-			end
-
-			if draw.picksup == 1
-				memberRLen = draw.solver.membs(1).len;
-				maxX = memberRLen - minMembLen; % if negative, maxX is less than minimumn
-				maxX = max(maxX, minMembLen);
-
-				memberLLen = [];
-				minX = [];
-			elseif draw.picksup == lastSup
-				memberLLen = draw.solver.membs(end).len;
-				if memberLLen < minMembLen
-					minX = node_pos;
-				else
-					minX = node_pos - (memberLLen - minMembLen);
-				end
-
-				memberRLen = [];
-				maxX = [];
-			else
-				memberLLen = draw.solver.membs(draw.picksup - 1).len;
-				memberRLen = draw.solver.membs(draw.picksup).len;
-
-				if memberLLen <= minMembLen
-					minX = node_pos;
-				else
-					minX = node_pos - (memberLLen - minMembLen);
-				end
-				
-				if memberRLen <= minMembLen
-					maxX = node_pos;
-				else
-					maxX = node_pos + (memberRLen - minMembLen);
-				end
-			end
-
-			if draw.picksup == 1
-				if pt(1) <= maxX
-					nodeX = draw.snapToStepValue(pt(1),0.1);
-					nodeDiff = node_pos - nodeX;
-					RLen = memberRLen + nodeDiff;
+        function updateSupMove(draw,cnv,pt)
+            if ~isempty(draw.hnd_draft)
+                delete(draw.hnd_draft);
+                draw.hnd_draft = [];
+            end
+            if draw.picksup == 0
+                return
+            end
+            %%%%%%% COMPLETE HERE - CROSSDRAW: 12 %%%%%%%
+            minMembLen = draw.solver.totalLen * CrossDraw.minmemblen_fac;
+            halfYsize = diff(cnv.YLim) * 0.5;
+            max_load = draw.getMaxLoad();
+            minload_size = draw.solver.totalLen * CrossDraw.minloadsize_fac;
+            load_step = draw.solver.totalLen * CrossDraw.loadstep_fac;
+            arrowsize = draw.solver.totalLen * CrossDraw.arrowsize_fac;
+            supsize = draw.solver.totalLen * CrossDraw.supsize_fac;
+            totalLen = draw.solver.totalLen;
+            node_pos = 0;
+            
+            lastSup = draw.solver.nnode + 2;
+            if draw.picksup > 1 && draw.picksup < lastSup
+                for i = 2:draw.picksup
+                    len = draw.solver.membs(i-1).len;
+                    node_pos = node_pos + len;
+                end
+            elseif draw.picksup == lastSup
+                node_pos = totalLen;
+            end
+            
+            if draw.picksup == 1
+                memberRLen = draw.solver.membs(1).len;
+                maxX = memberRLen - minMembLen; % if negative, maxX is less than minimumn
+                maxX = max(maxX, minMembLen);
+                
+                memberLLen = [];
+                minX = [];
+            elseif draw.picksup == lastSup
+                memberLLen = draw.solver.membs(end).len;
+                if memberLLen < minMembLen
+                    minX = node_pos;
+                else
+                    minX = node_pos - (memberLLen - minMembLen);
+                end
+                
+                memberRLen = [];
+                maxX = [];
+            else
+                memberLLen = draw.solver.membs(draw.picksup - 1).len;
+                memberRLen = draw.solver.membs(draw.picksup).len;
+                
+                if memberLLen <= minMembLen
+                    minX = node_pos;
+                else
+                    minX = node_pos - (memberLLen - minMembLen);
+                end
+                
+                if memberRLen <= minMembLen
+                    maxX = node_pos;
+                else
+                    maxX = node_pos + (memberRLen - minMembLen);
+                end
+            end
+            
+            if draw.picksup == 1
+                if pt(1) <= maxX
+                    nodeX = draw.snapToStepValue(pt(1),0.1);
+                    nodeDiff = node_pos - nodeX;
+                    RLen = memberRLen + nodeDiff;
                 else
                     nodeX = maxX;
                     RLen = minMembLen;
-				end
-			elseif draw.picksup == lastSup
-				if pt(1) >= minX
-					nodeX = draw.snapToStepValue(pt(1),0.1);
-					nodeDiff = node_pos - nodeX;
-					LLen = memberLLen - nodeDiff;
+                end
+            elseif draw.picksup == lastSup
+                if pt(1) >= minX
+                    nodeX = draw.snapToStepValue(pt(1),0.1);
+                    nodeDiff = node_pos - nodeX;
+                    LLen = memberLLen - nodeDiff;
                 else
                     nodeX = minX;
                     LLen = minMembLen;
-				end
-			else
-				if pt(1) >= minX && pt(1) <= maxX
-					nodeX = draw.snapToStepValue(pt(1),0.1);
-					nodeDiff = node_pos - nodeX;
-					LLen = memberLLen - nodeDiff;
-					RLen = memberRLen + nodeDiff;
-				elseif pt(1) < minX
-					nodeX = minX;
-					nodeDiff = node_pos - nodeX;
-					LLen = minMembLen;
-					RLen = memberRLen + nodeDiff;
-				elseif pt(1) > maxX
-					nodeX = maxX;
-					nodeDiff = node_pos - nodeX;
-					LLen = memberLLen - nodeDiff;
-					RLen = minMembLen;
-				end
-			end
-
-			% Draw the support
-			draw.hnd_draft = hggroup(cnv);
-			if draw.picksup == 1
-				if draw.solver.supinit == 0
-					draw.draftTriangle(cnv,draw.hnd_draft,nodeX,0,...
-							supsize,supsize,-pi/2,draw.GREEN);
-				elseif draw.solver.supinit == 01
-					draw.draftThirdGenSupport(cnv,draw.hnd_draft,nodeX,...
-							0,supsize,draw.GREEN,true);
-				end
-			elseif draw.picksup == lastSup
-				if draw.solver.supend == 0
-					draw.draftTriangle(cnv,draw.hnd_draft,nodeX,0,...
-							supsize,supsize,-pi/2,draw.GREEN);
-				elseif draw.solver.supend == 1
-					draw.draftThirdGenSupport(cnv,draw.hnd_draft,nodeX,...
-							0,supsize,draw.GREEN,false);
-				end
-			else
-				draw.draftTriangle(cnv,draw.hnd_draft,nodeX,0,...
-							supsize,supsize,-pi/2,draw.GREEN);
-			end
-
-			% Draw the member Load and the dimension load
-			if draw.picksup == 1
-				qR = draw.solver.membs(1).q;
-
-				loadSizeR = CrossDraw.loadsize_fac * halfYsize * ...
-					(abs(qR) / max_load);
-				loadSizeR = max(loadSizeR, minload_size);
-
-				draw.draftMemberLoad(cnv,draw.hnd_draft,nodeX,RLen,...
-					qR,loadSizeR,load_step,arrowsize);
-				draw.draftDimensionMember(cnv,draw.hnd_draft,nodeX,RLen,...
-					halfYsize,draw.GREEN);
-				return
-			elseif draw.picksup == lastSup
-				qL = draw.solver.membs(end).q;
+                end
+            else
+                if pt(1) >= minX && pt(1) <= maxX
+                    nodeX = draw.snapToStepValue(pt(1),0.1);
+                    nodeDiff = node_pos - nodeX;
+                    LLen = memberLLen - nodeDiff;
+                    RLen = memberRLen + nodeDiff;
+                elseif pt(1) < minX
+                    nodeX = minX;
+                    nodeDiff = node_pos - nodeX;
+                    LLen = minMembLen;
+                    RLen = memberRLen + nodeDiff;
+                elseif pt(1) > maxX
+                    nodeX = maxX;
+                    nodeDiff = node_pos - nodeX;
+                    LLen = memberLLen - nodeDiff;
+                    RLen = minMembLen;
+                end
+            end
+            
+            % Draw the support
+            draw.hnd_draft = hggroup(cnv);
+            if draw.picksup == 1
+                if draw.solver.supinit == 0
+                    draw.draftTriangle(cnv,draw.hnd_draft,nodeX,0,...
+                        supsize,supsize,-pi/2,draw.GREEN);
+                elseif draw.solver.supinit == 01
+                    draw.draftThirdGenSupport(cnv,draw.hnd_draft,nodeX,...
+                        0,supsize,draw.GREEN,true);
+                end
+            elseif draw.picksup == lastSup
+                if draw.solver.supend == 0
+                    draw.draftTriangle(cnv,draw.hnd_draft,nodeX,0,...
+                        supsize,supsize,-pi/2,draw.GREEN);
+                elseif draw.solver.supend == 1
+                    draw.draftThirdGenSupport(cnv,draw.hnd_draft,nodeX,...
+                        0,supsize,draw.GREEN,false);
+                end
+            else
+                draw.draftTriangle(cnv,draw.hnd_draft,nodeX,0,...
+                    supsize,supsize,-pi/2,draw.GREEN);
+            end
+            
+            % Draw the member Load and the dimension load
+            if draw.picksup == 1
+                qR = draw.solver.membs(1).q;
+                
+                loadSizeR = CrossDraw.loadsize_fac * halfYsize * ...
+                    (abs(qR) / max_load);
+                loadSizeR = max(loadSizeR, minload_size);
+                
+                draw.draftMemberLoad(cnv,draw.hnd_draft,nodeX,RLen,...
+                    qR,loadSizeR,load_step,arrowsize);
+                draw.draftDimensionMember(cnv,draw.hnd_draft,nodeX,RLen,...
+                    halfYsize,draw.GREEN);
+                return
+            elseif draw.picksup == lastSup
+                qL = draw.solver.membs(end).q;
                 lenLast = draw.solver.membs(end).len;
-
-				loadSizeL = CrossDraw.loadsize_fac * halfYsize * ...
-					(abs(qL) / max_load);
-				loadSizeL = max(loadSizeL, minload_size);
-
-				draw.draftMemberLoad(cnv,draw.hnd_draft,totalLen - lenLast,LLen,...
-					qL,loadSizeL,load_step,arrowsize);
-				draw.draftDimensionMember(cnv,draw.hnd_draft,totalLen - lenLast,LLen,...
-					halfYsize,draw.GREEN);
-				return
-			else
-				qL = draw.solver.membs(draw.picksup-1).q;
-				qR = draw.solver.membs(draw.picksup).q;
-
-				loadSizeL = CrossDraw.loadsize_fac * halfYsize * ...
-					(abs(qL) / max_load);
-				loadSizeL = max(loadSizeL, minload_size);
-				loadSizeR = CrossDraw.loadsize_fac * halfYsize * ...
-					(abs(qR) / max_load);
-				loadSizeR = max(loadSizeR, minload_size);
-
-				draw.draftMemberLoad(cnv,draw.hnd_draft,node_pos-memberLLen,LLen,...
-					qL,loadSizeL,load_step,arrowsize);
-				draw.draftDimensionMember(cnv,draw.hnd_draft,node_pos-memberLLen,LLen,...
-					halfYsize,draw.GREEN);
-				draw.draftMemberLoad(cnv,draw.hnd_draft,nodeX,RLen,...
-					qR,loadSizeR,load_step,arrowsize);
-				draw.draftDimensionMember(cnv,draw.hnd_draft,nodeX,RLen,...
-					halfYsize,draw.GREEN);
-			end
-
-			
-			% draw.hnd_draft = hggroup(cnv);
-			% draw.draftTriangle(cnv,draw.hnd_draft,nodeX,0,...
-			% 	supsize,supsize,-pi/2,draw.GREEN);
-			% q1 = draw.solver.membs(draw.picksup).q;
-			% q2 = draw.solver.membs(draw.picksup+1).q;
-			% load_size1 = CrossDraw.loadsize_fac * halfYsize * ...
-			% 	(abs(q1) / max_load);
-			% load_size1 = max(load_size1, minload_size);
-			% load_size2 = CrossDraw.loadsize_fac * halfYsize * ...
-			% 	(abs(q2) / max_load);
-			% load_size2 = max(load_size2, minload_size);
-			
-			% draw.draftMemberLoad(cnv,draw.hnd_draft,node_pos-memberLLen,LLen,...
-			% 	q1,load_size1,load_step,arrowsize);
-			% draw.draftMemberLoad(cnv,draw.hnd_draft,nodeX,RLen,...
-			% 	q2,load_size2,load_step,arrowsize);
-			
-			% draw.draftDimensionMember(cnv,draw.hnd_draft,node_pos-memberLLen,...
-			% 	LLen,halfYsize,draw.GREEN);
-			% draw.draftDimensionMember(cnv,draw.hnd_draft,nodeX,...
-			% 	RLen,halfYsize,draw.GREEN);
-			%%%%%%% COMPLETE HERE - CROSSDRAW: 12 %%%%%%%
-		end
+                
+                loadSizeL = CrossDraw.loadsize_fac * halfYsize * ...
+                    (abs(qL) / max_load);
+                loadSizeL = max(loadSizeL, minload_size);
+                
+                draw.draftMemberLoad(cnv,draw.hnd_draft,totalLen - lenLast,LLen,...
+                    qL,loadSizeL,load_step,arrowsize);
+                draw.draftDimensionMember(cnv,draw.hnd_draft,totalLen - lenLast,LLen,...
+                    halfYsize,draw.GREEN);
+                return
+            else
+                qL = draw.solver.membs(draw.picksup-1).q;
+                qR = draw.solver.membs(draw.picksup).q;
+                
+                loadSizeL = CrossDraw.loadsize_fac * halfYsize * ...
+                    (abs(qL) / max_load);
+                loadSizeL = max(loadSizeL, minload_size);
+                loadSizeR = CrossDraw.loadsize_fac * halfYsize * ...
+                    (abs(qR) / max_load);
+                loadSizeR = max(loadSizeR, minload_size);
+                
+                draw.draftMemberLoad(cnv,draw.hnd_draft,node_pos-memberLLen,LLen,...
+                    qL,loadSizeL,load_step,arrowsize);
+                draw.draftDimensionMember(cnv,draw.hnd_draft,node_pos-memberLLen,LLen,...
+                    halfYsize,draw.GREEN);
+                draw.draftMemberLoad(cnv,draw.hnd_draft,nodeX,RLen,...
+                    qR,loadSizeR,load_step,arrowsize);
+                draw.draftDimensionMember(cnv,draw.hnd_draft,nodeX,RLen,...
+                    halfYsize,draw.GREEN);
+            end
+            %%%%%%% COMPLETE HERE - CROSSDRAW: 12 %%%%%%%
+        end
 		
 		%------------------------------------------------------------------
 		% If there is a pick support, delete current draft graphics
@@ -1738,32 +1717,71 @@ classdef CrossDraw < handle
 			n = draw.picksup;
 			%%%%%%% COMPLETE HERE - CROSSDRAW: 13 %%%%%%%
 			minMembLen = draw.solver.totalLen * CrossDraw.minmemblen_fac;
-			init_pos = 0;
-			for i = 1:n
-				len = draw.solver.membs(i).len;
-				init_pos = init_pos + len;
+            totalLen = draw.solver.totalLen;
+            node_pos = 0;
+			lastSup = draw.solver.nnode + 2;
+			if draw.picksup > 1 && draw.picksup < lastSup
+				for i = 2:draw.picksup
+					len = draw.solver.membs(i-1).len;
+					node_pos = node_pos + len;
+				end
+			elseif draw.picksup == lastSup
+				node_pos = totalLen;
 			end
-			memberLLen = draw.solver.membs(draw.picksup).len;
-			memberRLen = draw.solver.membs(draw.picksup+1).len;
-			if memberLLen <= minMembLen
-				minX = init_pos;
+
+			if draw.picksup == 1
+				memberRLen = draw.solver.membs(1).len;
+				maxX = memberRLen - minMembLen; % if negative, maxX is less than minimumn
+				maxX = max(maxX, minMembLen);
+
+				minX = [];
+			elseif draw.picksup == lastSup
+				memberLLen = draw.solver.membs(end).len;
+                if memberLLen < minMembLen
+                    minX = node_pos;
+                else
+                    minX = node_pos - (memberLLen - minMembLen);
+                end
+				maxX = [];
 			else
-				minX = init_pos - (memberLLen - minMembLen);
+				memberLLen = draw.solver.membs(draw.picksup - 1).len;
+				memberRLen = draw.solver.membs(draw.picksup).len;
+
+				if memberLLen <= minMembLen
+					minX = node_pos;
+				else
+					minX = node_pos - (memberLLen - minMembLen);
+				end
+				
+				if memberRLen <= minMembLen
+					maxX = node_pos;
+				else
+					maxX = node_pos + (memberRLen - minMembLen);
+				end
 			end
-			if memberRLen <= minMembLen
-				maxX = init_pos;
+
+			if draw.picksup == 1
+				if pt(1) <= maxX
+					nodeX = draw.snapToStepValue(pt(1),0.1);
+                else
+                    nodeX = maxX;
+				end
+			elseif draw.picksup == lastSup
+				if pt(1) >= minX
+					nodeX = draw.snapToStepValue(pt(1),0.1);
+                else
+                    nodeX = minX;
+				end
 			else
-				maxX = init_pos + (memberRLen - minMembLen);
+				if pt(1) >= minX && pt(1) <= maxX
+					nodeX = draw.snapToStepValue(pt(1),0.1);
+				elseif pt(1) < minX
+					nodeX = minX;
+				elseif pt(1) > maxX
+					nodeX = maxX;
+				end
 			end
-			
-			if pt(1) >= minX && pt(1) <= maxX
-				nodeX = draw.snapToStepValue(pt(1),0.1);
-			elseif pt(1) < minX
-				nodeX = minX;
-			elseif pt(1) > maxX
-				nodeX = maxX;
-			end
-			shift = nodeX - init_pos;
+			shift = nodeX - node_pos;
 			%%%%%%% COMPLETE HERE - CROSSDRAW: 13 %%%%%%%
 			draw.picksup = 0;
 			draw.orig_suppos = 0;
