@@ -354,7 +354,7 @@ classdef CrossDraw < handle
 				
 			elseif artinit == CrossDraw.CLAMP && artend == CrossDraw.FREE
 				
-				v01 = (q / EI) .* ( (x.^4 ./ 24) + (len^2 .* x.^2 ./ 4) - (len .* x.^3 ./ 6));
+				v01 = (-q / EI) .* ( (x.^4 ./ 24) + (len^2 .* x.^2 ./ 4) - (len .* x.^3 ./ 6));
 				
 			elseif artinit == CrossDraw.FREE && artend == CrossDraw.CLAMP
 				
@@ -782,7 +782,7 @@ classdef CrossDraw < handle
                     elseif draw.solver.supend == CrossDraw.FREE
                         v01 = draw.engastamento_perfeito(CrossDraw.CLAMP,CrossDraw.FREE,L,q,EI,x);
                         [N2, N4] = draw.funcoes_forma(CrossDraw.CLAMP,CrossDraw.FREE,L,x);
-                        endNodeRot = (len^3*q)/(6*EI) + initNodeRot;
+                        endNodeRot = (L^3*-q)/(6*EI) + initNodeRot;
                     end
                 else %% Intermediate members
                     v01 = draw.engastamento_perfeito(1,1,L,q,EI,x);
